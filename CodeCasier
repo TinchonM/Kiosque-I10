@@ -1,0 +1,134 @@
+#include <SPI.h>
+#include <RFID.h>
+#include <EEPROM.h>
+#include <SolenoidLock.h>
+
+#define SS_PIN 53
+#define RST_PIN 10
+#define SOLENOIDLOCK_PIN_GND 12
+
+SolenoidLock solenoidLock(SOLENOIDLOCK_PIN_GND);
+byte cur_badge[5];
+
+RFID rfid(SS_PIN, RST_PIN);
+
+void setup()
+{
+  Serial.begin(9600);
+  SPI.begin();
+  rfid.init();
+}
+
+void remove_badge()
+{
+  // Removes the current badge from the list of allowed badges stored in the EEPROM
+  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
+  int badge_index = -1; // Index of the badge to remove (-1 if badge not found)
+ 
+  // Search for the badge in the EEPROM
+  for(int i = 0; i < nb_badges; i++)
+  {
+    if(EEPROM.read(i * 5 + 1) == cur_badge[0] &&
+       EEPROM.read(i * 5 + 2) == cur_badge[1] &&
+       EEPROM.read(i * 5 + 3) == cur_badge[2] &&
+       EEPROM.read(i * 5 + 4) == cur_badge[3] &&
+       EEPROM.read(i * 5 + 5) == cur_badge[4])
+    {
+      badge_index = i;
+      break;
+    }
+  }
+ 
+  // If the badge was found, remove it from the EEPROM
+  if(badge_index >= 0)
+  {
+    for(int i = badge_index; i < nb_badges - 1; i++)
+    {
+      EEPROM.write(i * 5 + 1, EEPROM.read(i * 5 + 6));
+      EEPROM.write(i * 5 + 2, EEPROM.read(i * 5 + 7));
+      EEPROM.write(i * 5 + 3, EEPROM.read(i * 5 + 8));
+      EEPROM.write(i * 5 + 4, EEPROM.read(i * 5 + 9));
+      EEPROM.write(i * 5 + 5, EEPROM.read(i * 5 + 10));
+    }
+    EEPROM.write(0, nb_badges - 1); // Update the number of badges stored in the EEPROM
+  }
+}
+
+void add_badge()
+{
+  // Adds the current badge to the list of allowed badges stored in the EEPROM
+  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
+  int start_mem = nb_badges * 5 + 1; // Calculate the memory location where the badge will be stored
+ 
+  // Store the badge in the EEPROM
+  for(byte i = 0; i < 5; i++)
+  {
+    EEPROM.write(start_mem + i, cur_badge[i]);
+  }
+  EEPROM.write(0, nb_badges + 1); // Update the number of badges stored in the EEPROM
+}
+
+bool compare_badge()
+{
+  // Compare the current badge with the list of allowed badges stored in the EEPROM
+  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
+  bool badge_ok = false; // Set to true if badge is found in the list of allowed badges
+ 
+  // Search for the badge in the EEPROM
+  for(int i = 0; i < nb_badges; i++)
+  {
+    if(EEPROM.read(i * 5 + 1) == cur_badge[0] &&
+       EEPROM.read(i * 5 + 2) == cur_badge[1] &&
+       EEPROM.read(i * 5 + 3) == cur_badge[2] &&
+       EEPROM.read(i * 5 + 4) == cur_badge[3] &&
+       EEPROM.read(i * 5 + 5) == cur_badge[4])
+    {
+      badge_ok = true;
+      break;
+    }
+  }
+ 
+  return badge_ok;
+}
+
+void loop()
+{
+  if (rfid.isCard()) // Wait for a badge to be presented to the reader
+  {
+    if (rfid.readCardSerial())
+    {
+      for(int i = 0; i < 5; i++)
+      {
+        cur_badge[i] = rfid.serNum[i]; // Read the serial number of the badge
+      }
+     
+      if(compare_badge()) // Check if the badge is allowed to unlock the lock
+      {
+        solenoidLock.on(); // Unlock the lock
+        delay(1000); // Leave the lock unlocked for 1 second
+        solenoidLock.off(); // Lock the lock again
+        remove_badge(); // Remove the badge from the list of allowed badges
+        Serial.println("Unlocked and removed");
+        delay(1000);
+      }
+      else
+      {
+        Serial.println("Not recognized");
+        delay(1000);
+      }
+    }
+  }
+ 
+  if(Serial.available() > 0) // Check if a key has been pressed on the keyboard
+  {
+    char key = Serial.read(); // Read the key that was pressed
+    if(key == '1') // If the key is "1", add the current badge to the list of allowed badges
+    {
+      add_badge();
+      Serial.println("Badge added");
+      delay(1000);
+    }
+  }
+ 
+  rfid.halt();
+}
