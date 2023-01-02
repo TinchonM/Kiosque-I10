@@ -21,11 +21,11 @@ void setup()
 
 void remove_badge()
 {
-  // Removes the current badge from the list of allowed badges stored in the EEPROM
-  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
-  int badge_index = -1; // Index of the badge to remove (-1 if badge not found)
+  // Retire le badge actuel de la liste des badges autorisés stockés dans l'EEPROM
+  int nb_badges = EEPROM.read(0); //Lit le numéro des badges stockés and l'EEPROM
+  int badge_index = -1; // Index du badge à retirer (-1 si aucun badge n'est trouvé)
  
-  // Search for the badge in the EEPROM
+  // Recherche un badge dans l'EEPROM
   for(int i = 0; i < nb_badges; i++)
   {
     if(EEPROM.read(i * 5 + 1) == cur_badge[0] &&
@@ -39,7 +39,7 @@ void remove_badge()
     }
   }
  
-  // If the badge was found, remove it from the EEPROM
+  // Si le badge est détecté, le retirer de l'EEPROM
   if(badge_index >= 0)
   {
     for(int i = badge_index; i < nb_badges - 1; i++)
@@ -50,29 +50,29 @@ void remove_badge()
       EEPROM.write(i * 5 + 4, EEPROM.read(i * 5 + 9));
       EEPROM.write(i * 5 + 5, EEPROM.read(i * 5 + 10));
     }
-    EEPROM.write(0, nb_badges - 1); // Update the number of badges stored in the EEPROM
+    EEPROM.write(0, nb_badges - 1); // Mise à jour du numéro des badges stockés dans l'EEPROM
   }
 }
 
 void add_badge()
 {
-  // Adds the current badge to the list of allowed badges stored in the EEPROM
-  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
-  int start_mem = nb_badges * 5 + 1; // Calculate the memory location where the badge will be stored
+  // Ajoute le badge actuel dans la liste des badges autorisés stockés dans l'EEPROM
+  int nb_badges = EEPROM.read(0); // Lecture du numéro des badges stockés dans l'EEPROM
+  int start_mem = nb_badges * 5 + 1; // Calcule l'endroit en mémoire où le badge sera stocké
  
-  // Store the badge in the EEPROM
+  // Stocke le badge dans l'EEPROM
   for(byte i = 0; i < 5; i++)
   {
     EEPROM.write(start_mem + i, cur_badge[i]);
   }
-  EEPROM.write(0, nb_badges + 1); // Update the number of badges stored in the EEPROM
+  EEPROM.write(0, nb_badges + 1); // Mise à jour du numéro des badges stockés dans l'EEPROM
 }
 
 bool compare_badge()
 {
-  // Compare the current badge with the list of allowed badges stored in the EEPROM
-  int nb_badges = EEPROM.read(0); // Read the number of badges stored in the EEPROM
-  bool badge_ok = false; // Set to true if badge is found in the list of allowed badges
+  // Compare le badge actuel dans la liste des badges autorisés stockés dans l'EEPROM
+  int nb_badges = EEPROM.read(0); // Lecture du numéro des badges stockés dans l'EEPROM
+  bool badge_ok = false; // Met à 0 si aucun badge n'est détecté dans la liste des badges autorisés
  
   // Search for the badge in the EEPROM
   for(int i = 0; i < nb_badges; i++)
