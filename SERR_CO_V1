@@ -74,7 +74,7 @@ bool compare_badge()
   int nb_badges = EEPROM.read(0); // Lecture du numéro des badges stockés dans l'EEPROM
   bool badge_ok = false; // Met à 0 si aucun badge n'est détecté dans la liste des badges autorisés
  
-  // Search for the badge in the EEPROM
+  // Recherche le badge dans l'EEPROM
   for(int i = 0; i < nb_badges; i++)
   {
     if(EEPROM.read(i * 5 + 1) == cur_badge[0] &&
@@ -93,21 +93,21 @@ bool compare_badge()
 
 void loop()
 {
-  if (rfid.isCard()) // Wait for a badge to be presented to the reader
+  if (rfid.isCard()) // Attend qu'un badge soit présenté devant le lecteur
   {
     if (rfid.readCardSerial())
     {
       for(int i = 0; i < 5; i++)
       {
-        cur_badge[i] = rfid.serNum[i]; // Read the serial number of the badge
+        cur_badge[i] = rfid.serNum[i]; // Lit le numéro de série du badge
       }
      
-      if(compare_badge()) // Check if the badge is allowed to unlock the lock
+      if(compare_badge()) // Regarde si le badge est autorisé à déverrouiller le casier
       {
-        solenoidLock.on(); // Unlock the lock
-        delay(1000); // Leave the lock unlocked for 1 second
-        solenoidLock.off(); // Lock the lock again
-        remove_badge(); // Remove the badge from the list of allowed badges
+        solenoidLock.on(); // Ouvre le casier
+        delay(1000); // Laisse le locket ouvert pendant une seconde
+        solenoidLock.off(); // Ferme le locket à nouveau
+        remove_badge(); // Retire le badge de la liste des badges autorisés
         Serial.println("Unlocked and removed");
         delay(1000);
       }
@@ -119,10 +119,10 @@ void loop()
     }
   }
  
-  if(Serial.available() > 0) // Check if a key has been pressed on the keyboard
+  if(Serial.available() > 0) // Regarde si une touche à été pressée sur le clavier
   {
-    char key = Serial.read(); // Read the key that was pressed
-    if(key == '1') // If the key is "1", add the current badge to the list of allowed badges
+    char key = Serial.read(); // Lit la touche qui a été pressée
+    if(key == '1') // Si la touche pressée est "1", ajoute le badge actuelle à la liste des badges autorisés
     {
       add_badge();
       Serial.println("Badge added");
